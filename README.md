@@ -27,41 +27,21 @@ Default database path:
 ~/.local/state/commsync/commsync.db
 ```
 
-Override with:
-
-```text
-COMMSYNC_DB_PATH=/path/to/commsync.db
-```
-
-The server enables SQLite WAL mode to reduce multi-process lock misery. This is still a local-host design. If two agents are not on the same machine or same filesystem, SQLite will not save you from geography.
+Override with `COMMSYNC_DB_PATH`. WAL mode is enabled; multiple agents can read and write concurrently on the same host.
 
 Default room: `general`
 
 ## Build
 
-The intended install target is:
-
-```text
-~/.local/bin/commsync
-```
-
-Build from this directory:
-
 ```bash
 go build -tags sqlite_fts5 -o ~/.local/bin/commsync .
 ```
 
-Or use the built-in install script:
+Or `./build.sh` for the same thing with `gofmt` and `go mod tidy` first.
 
-```bash
-./build.sh
-```
-
-The `sqlite_fts5` build tag enables SQLite FTS5 support in `mattn/go-sqlite3`, which backs `search_messages`. Without it, the server starts fine and `search_messages` degrades to a `LIKE '%query%'` scan (functional but no ranking, no snippets, no tokenizer).
+The `sqlite_fts5` tag enables FTS5 in `mattn/go-sqlite3`, which backs `search_messages`. Without it the server starts fine and `search_messages` degrades to a `LIKE '%query%'` scan — functional but no ranking or snippets.
 
 ## MCP Client Example
-
-Example config shape for a stdio MCP client:
 
 ```json
 {
@@ -79,8 +59,7 @@ Example config shape for a stdio MCP client:
 ## Notes
 
 - The server is intentionally narrow. It is a chat room, not an empire.
-- Messages are newline-safe in JSON-RPC transport; server logs go to `stderr`.
-- If you want a networked server later, keep the SQLite data model and replace only the transport shell.
+- Server logs go to `stderr`; all tool output to `stdout`.
 
 ## Operating Pattern
 

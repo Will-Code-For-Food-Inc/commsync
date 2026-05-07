@@ -1,0 +1,6 @@
+# Compiled binaries
+/commsync
+tui/commsync-tui
+
+# Local Claude state
+.claude/

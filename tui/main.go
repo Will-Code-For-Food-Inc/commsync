@@ -229,6 +229,60 @@ SELECT agent FROM (
 	return out, rows.Err()
 }
 
+func (s *store) searchMessages(ctx context.Context, query string) ([]message, error) {
+	q := `
+SELECT m.id, m.created_at, m.room_name, m.from_agent, m.to_agent, m.topic, m.status, m.body,
+       m.acked_at IS NOT NULL AS acked, m.reply_to_id,
+       (SELECT id FROM pinned_messages WHERE message_id = m.id AND unpinned_at IS NULL ORDER BY id ASC LIMIT 1) AS pin_id,
+       (SELECT kind FROM pinned_messages WHERE message_id = m.id AND unpinned_at IS NULL ORDER BY id ASC LIMIT 1) AS pin_kind
+FROM messages_fts f
+JOIN messages m ON m.id = f.rowid
+WHERE messages_fts MATCH ? AND m.archived_at IS NULL
+ORDER BY bm25(messages_fts), m.created_at DESC, m.id DESC
+LIMIT 200`
+	rows, err := s.db.QueryContext(ctx, q, query)
+	if err != nil {
+		// FTS5 not available or query error — fallback to LIKE
+		q2 := `
+SELECT id, created_at, room_name, from_agent, to_agent, topic, status, body,
+       acked_at IS NOT NULL AS acked, reply_to_id
+FROM messages
+WHERE archived_at IS NULL AND body LIKE ?
+ORDER BY created_at DESC, id DESC
+LIMIT 200`
+		rows, err = s.db.QueryContext(ctx, q2, "%"+query+"%")
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		var out []message
+		for rows.Next() {
+			var m message
+			var createdAt string
+			if err := rows.Scan(&m.ID, &createdAt, &m.Room, &m.From, &m.To, &m.Topic,
+				&m.Status, &m.Body, &m.Acked, &m.ReplyTo); err != nil {
+				return nil, err
+			}
+			m.CreatedAt, _ = time.Parse(time.RFC3339, createdAt)
+			out = append(out, m)
+		}
+		return out, rows.Err()
+	}
+	defer rows.Close()
+	var out []message
+	for rows.Next() {
+		var m message
+		var createdAt string
+		if err := rows.Scan(&m.ID, &createdAt, &m.Room, &m.From, &m.To, &m.Topic,
+			&m.Status, &m.Body, &m.Acked, &m.ReplyTo, &m.PinID, &m.PinKind); err != nil {
+			return nil, err
+		}
+		m.CreatedAt, _ = time.Parse(time.RFC3339, createdAt)
+		out = append(out, m)
+	}
+	return out, rows.Err()
+}
+
 func (s *store) listPins(ctx context.Context, identity string) ([]pinEntry, error) {
 	rows, err := s.db.QueryContext(ctx, `
 SELECT pm.id, pm.kind, pm.pinned_at, pm.pinned_by,
@@ -283,6 +337,10 @@ type listRow struct {
 
 type tickMsg time.Time
 type pinResultMsg struct{ err error }
+type searchMsg struct {
+	results []message
+	err     error
+}
 
 type dataMsg struct {
 	msgs   []message
@@ -315,6 +373,11 @@ type model struct {
 	pickIdx        int
 	showPins       bool
 	pinCursor      int
+	showSearch     bool
+	searchInput    string
+	searchActive   bool
+	searchResults  []message
+	searchCursor   int
 	identity       string
 	binPath        string
 	dbPath         string
@@ -369,6 +432,12 @@ func (m *model) clampCursor() {
 }
 
 func (m *model) currentMessage() (message, bool) {
+	if m.searchActive {
+		if m.searchCursor < 0 || m.searchCursor >= len(m.searchResults) {
+			return message{}, false
+		}
+		return m.searchResults[m.searchCursor], true
+	}
 	if m.cursor < 0 || m.cursor >= len(m.rows) {
 		return message{}, false
 	}
@@ -452,13 +521,38 @@ func (m model) Update(raw tea.Msg) (tea.Model, tea.Cmd) {
 			m.errMsg = msg.err.Error()
 		}
 		return m, m.reload()
+	case searchMsg:
+		if msg.err != nil {
+			m.errMsg = msg.err.Error()
+		} else {
+			m.searchResults = msg.results
+			m.searchCursor = 0
+		}
+		return m, nil
 	case tea.KeyMsg:
 		return m.onKey(msg)
 	}
 	return m, nil
 }
 
+func (m model) execSearch() tea.Cmd {
+	st := m.st
+	q := m.searchInput
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		results, err := st.searchMessages(ctx, q)
+		return searchMsg{results: results, err: err}
+	}
+}
+
 func (m model) onKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if m.showSearch {
+		return m.onSearchKey(k)
+	}
+	if m.searchActive && !m.showPreview {
+		return m.onSearchListKey(k)
+	}
 	if m.showPins {
 		return m.onPinPanelKey(k)
 	}
@@ -485,6 +579,17 @@ func (m model) onKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch k.String() {
 	case "q", "ctrl+c":
 		return m, tea.Quit
+	case "/":
+		m.showSearch = true
+		m.searchInput = ""
+		return m, nil
+	case "esc":
+		if m.searchActive {
+			m.searchActive = false
+			m.searchResults = nil
+			m.searchInput = ""
+			return m, nil
+		}
 	case "?":
 		m.showHelp = true
 	case "v":
@@ -697,6 +802,55 @@ func (m model) onPickKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+func (m model) onSearchKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch k.String() {
+	case "esc":
+		m.showSearch = false
+		m.searchInput = ""
+		m.searchActive = false
+		m.searchResults = nil
+	case "enter":
+		if m.searchInput != "" {
+			m.showSearch = false
+			m.searchActive = true
+			m.searchCursor = 0
+			return m, m.execSearch()
+		}
+		m.showSearch = false
+	case "backspace", "ctrl+h":
+		if len(m.searchInput) > 0 {
+			runes := []rune(m.searchInput)
+			m.searchInput = string(runes[:len(runes)-1])
+		}
+	default:
+		if len(k.String()) == 1 || k.String() == " " {
+			m.searchInput += k.String()
+		}
+	}
+	return m, nil
+}
+
+func (m model) onSearchListKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch k.String() {
+	case "esc", "x":
+		m.searchActive = false
+		m.searchResults = nil
+		m.searchInput = ""
+	case "j", "down":
+		if m.searchCursor < len(m.searchResults)-1 {
+			m.searchCursor++
+		}
+	case "k", "up":
+		if m.searchCursor > 0 {
+			m.searchCursor--
+		}
+	case "enter", " ":
+		m.showPreview = true
+		m.previewScroll = 0
+	}
+	return m, nil
+}
+
 func (m model) pickOptions() []string {
 	switch m.pickKind {
 	case "pinkind":
@@ -837,11 +991,88 @@ func (m model) renderHeader() string {
 }
 
 func (m model) renderFooter() string {
-	hint := "q quit | ? help | v about | j/k move | tab/enter collapse | enter preview | r room | t topic | a agent | A acked | x clear | R reload | p pin | u unpin | P pins"
+	if m.showSearch {
+		bar := styleHeader.Render("/") + " " + m.searchInput + "█"
+		return styleBar.Width(m.width).Render(bar)
+	}
+	if m.searchActive {
+		indicator := styleWarn.Render(fmt.Sprintf("search: %q (%d results) — esc/x to clear", m.searchInput, len(m.searchResults)))
+		return styleBar.Width(m.width).Render(indicator)
+	}
+	hint := "q quit | / search | ? help | v about | j/k move | tab/enter collapse | enter preview | r room | t topic | a agent | A acked | x clear | R reload | p pin | u unpin | P pins"
 	return styleBar.Width(m.width).Render(styleHelp.Render(hint))
 }
 
+func (m model) renderSearchResults(h int) string {
+	if len(m.searchResults) == 0 {
+		return styleDim.Render("no results for " + m.searchInput)
+	}
+	const badgeW = 2
+	tsW := 5
+	roomW := 10
+	fromW := 12
+	toW := 10
+	topicW := 14
+	statusW := 9
+	remainder := m.width - badgeW - tsW - roomW - fromW - toW - topicW - statusW - 6
+	if remainder < 20 {
+		remainder = 20
+	}
+	bodyW := remainder
+
+	lines := []string{}
+	colHeader := fmt.Sprintf("  %-*s  %-*s %-*s %-*s %-*s %-*s %s",
+		tsW, "TIME", roomW, "ROOM", fromW, "FROM", toW, "→ TO", topicW, "TOPIC", statusW, "STATUS", "BODY")
+	lines = append(lines, styleDim.Render(colHeader))
+
+	rowsAvail := h - 1
+	if rowsAvail < 3 {
+		rowsAvail = 3
+	}
+	start := 0
+	if m.searchCursor >= rowsAvail {
+		start = m.searchCursor - rowsAvail + 1
+	}
+	end := start + rowsAvail
+	if end > len(m.searchResults) {
+		end = len(m.searchResults)
+	}
+
+	for i := start; i < end; i++ {
+		msg := m.searchResults[i]
+		ts := msg.CreatedAt.Local().Format("15:04")
+		room := truncate(msg.Room, roomW)
+		from := truncate(msg.From, fromW)
+		to := truncate(msg.To, toW)
+		topic := truncate(msg.Topic, topicW)
+		status := truncate(msg.Status, statusW)
+		preview := truncate(oneLine(msg.Body), bodyW)
+		badge := "  "
+		if msg.PinID.Valid {
+			if msg.PinKind.String == "snippet" {
+				badge = "* "
+			} else {
+				badge = "! "
+			}
+		}
+		statusStr := statusStyle(msg.Status).Render(fmt.Sprintf("%-*s", statusW, status))
+		msgRow := fmt.Sprintf("%s%-*s  %-*s %-*s %-*s %-*s %s %s",
+			badge, tsW, ts, roomW, room, fromW, from, toW, to, topicW, topic, statusStr, preview)
+		if msg.Acked {
+			msgRow = styleAck.Render(msgRow)
+		}
+		if i == m.searchCursor {
+			msgRow = styleCursor.Render(msgRow)
+		}
+		lines = append(lines, msgRow)
+	}
+	return strings.Join(lines, "\n")
+}
+
 func (m model) renderList(h int) string {
+	if m.searchActive {
+		return m.renderSearchResults(h)
+	}
 	if len(m.messages) == 0 {
 		return styleDim.Render("no messages match current filter")
 	}
@@ -1011,6 +1242,7 @@ func (m model) renderHelp() string {
 
   q / ctrl-c   quit
   ?            toggle this help
+  /            search messages (FTS5; enter to run, esc to clear)
   j / down     move cursor down
   k / up       move cursor up
   g            jump to newest

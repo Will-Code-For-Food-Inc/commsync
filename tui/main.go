@@ -20,6 +20,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"runtime/debug"
 	"sort"
 	"strings"
 	"time"
@@ -278,39 +279,42 @@ type dataMsg struct {
 }
 
 type model struct {
-	st            *store
-	width         int
-	height        int
-	filter        filterSpec
-	messages      []message
-	pins          []pinEntry
-	rooms         []string
-	topics        []string
-	agents        []string
-	cursor        int
-	showPreview   bool
-	previewScroll int
-	showHelp      bool
-	showPick      bool
-	pickKind      string // "room" | "topic" | "agent" | "pinkind"
-	pickIdx       int
-	showPins      bool
-	pinCursor     int
-	identity      string
-	binPath       string
+	st             *store
+	width          int
+	height         int
+	filter         filterSpec
+	messages       []message
+	pins           []pinEntry
+	rooms          []string
+	topics         []string
+	agents         []string
+	cursor         int
+	showPreview    bool
+	previewScroll  int
+	showHelp       bool
+	showAbout      bool
+	showPick       bool
+	pickKind       string // "room" | "topic" | "agent" | "pinkind"
+	pickIdx        int
+	showPins       bool
+	pinCursor      int
+	identity       string
+	binPath        string
+	dbPath         string
 	pinTargetMsgID int64
 	pinTargetPinID int64
-	errMsg        string
-	pollEvery     time.Duration
+	errMsg         string
+	pollEvery      time.Duration
 }
 
-func initialModel(st *store, pollEvery time.Duration, identity, binPath string) model {
+func initialModel(st *store, pollEvery time.Duration, identity, binPath, dbPath string) model {
 	return model{
 		st:        st,
 		filter:    filterSpec{includeAcked: false, limit: 500},
 		pollEvery: pollEvery,
 		identity:  identity,
 		binPath:   binPath,
+		dbPath:    dbPath,
 	}
 }
 
@@ -409,11 +413,20 @@ func (m model) onKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	}
+	if m.showAbout {
+		switch k.String() {
+		case "v", "esc", "q":
+			m.showAbout = false
+		}
+		return m, nil
+	}
 	switch k.String() {
 	case "q", "ctrl+c":
 		return m, tea.Quit
 	case "?":
 		m.showHelp = true
+	case "v":
+		m.showAbout = true
 	case "j", "down":
 		if m.cursor < len(m.messages)-1 {
 			m.cursor++
@@ -680,6 +693,9 @@ func (m model) View() string {
 	if m.showPick {
 		return overlay(screen, m.renderPicker(), m.width, m.height)
 	}
+	if m.showAbout {
+		return overlay(screen, m.renderAbout(), m.width, m.height)
+	}
 	return screen
 }
 
@@ -724,7 +740,7 @@ func (m model) renderHeader() string {
 }
 
 func (m model) renderFooter() string {
-	hint := "q quit | ? help | j/k move | enter preview | r room | t topic | a agent | A acked | x clear | R reload | p pin | u unpin | P pins"
+	hint := "q quit | ? help | v about | j/k move | enter preview | r room | t topic | a agent | A acked | x clear | R reload | p pin | u unpin | P pins"
 	return styleBar.Width(m.width).Render(styleHelp.Render(hint))
 }
 
@@ -735,20 +751,21 @@ func (m model) renderList(h int) string {
 	// messages slice is already newest-first. Render newest at top.
 	// Column widths (fit to width).
 	const badgeW = 2 // pin badge: "* " or "! " or "  "
-	tsW := 14
+	tsW := 16        // "2006-01-02 15:04"
+	roomW := 10
 	fromW := 12
 	toW := 10
 	topicW := 14
 	statusW := 9
-	remainder := m.width - badgeW - tsW - fromW - toW - topicW - statusW - 5
+	remainder := m.width - badgeW - tsW - roomW - fromW - toW - topicW - statusW - 6
 	if remainder < 20 {
 		remainder = 20
 	}
 	bodyW := remainder
 
 	lines := []string{}
-	colHeader := fmt.Sprintf("  %-*s  %-*s %-*s %-*s %-*s %s",
-		tsW, "DATETIME", fromW, "FROM", toW, "→ TO", topicW, "TOPIC", statusW, "STATUS", "BODY")
+	colHeader := fmt.Sprintf("  %-*s  %-*s %-*s %-*s %-*s %-*s %s",
+		tsW, "DATETIME", roomW, "ROOM", fromW, "FROM", toW, "→ TO", topicW, "TOPIC", statusW, "STATUS", "BODY")
 	lines = append(lines, styleDim.Render(colHeader))
 
 	// determine visible window around cursor
@@ -767,7 +784,8 @@ func (m model) renderList(h int) string {
 
 	for i := start; i < end; i++ {
 		msg := m.messages[i]
-		ts := msg.CreatedAt.Local().Format("20060102150405")
+		ts := msg.CreatedAt.Local().Format("2006-01-02 15:04")
+		room := truncate(msg.Room, roomW)
 		from := truncate(msg.From, fromW)
 		to := truncate(msg.To, toW)
 		topic := truncate(msg.Topic, topicW)
@@ -784,8 +802,8 @@ func (m model) renderList(h int) string {
 		}
 
 		statusStr := statusStyle(msg.Status).Render(fmt.Sprintf("%-*s", statusW, status))
-		row := fmt.Sprintf("%s%-*s  %-*s %-*s %-*s %s %s",
-			badge, tsW, ts, fromW, from, toW, to, topicW, topic, statusStr, preview)
+		row := fmt.Sprintf("%s%-*s  %-*s %-*s %-*s %-*s %s %s",
+			badge, tsW, ts, roomW, room, fromW, from, toW, to, topicW, topic, statusStr, preview)
 
 		if msg.Acked {
 			row = styleAck.Render(row)
@@ -912,6 +930,55 @@ Polls every ~2s. Writes via commsync binary.`
 	return box
 }
 
+func (m model) renderAbout() string {
+	exe, _ := os.Executable()
+
+	revision := "(unknown)"
+	buildTime := "(unknown)"
+	goVersion := "(unknown)"
+	if info, ok := debug.ReadBuildInfo(); ok {
+		goVersion = info.GoVersion
+		for _, s := range info.Settings {
+			switch s.Key {
+			case "vcs.revision":
+				if len(s.Value) > 12 {
+					revision = s.Value[:12]
+				} else {
+					revision = s.Value
+				}
+			case "vcs.time":
+				revision += " @ " + s.Value
+			}
+		}
+		if buildTime == "(unknown)" {
+			for _, s := range info.Settings {
+				if s.Key == "vcs.time" {
+					buildTime = s.Value
+				}
+			}
+		}
+	}
+
+	content := fmt.Sprintf(`commsync-tui
+
+  revision  %s
+  go        %s
+  binary    %s
+  db        %s
+  identity  %s
+  poll      %s
+
+  v / esc / q  close`,
+		revision, goVersion, exe, m.dbPath, m.identity, m.pollEvery)
+
+	return lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		Padding(1, 2).
+		Background(lipgloss.Color("235")).
+		Foreground(lipgloss.Color("252")).
+		Render(styleHeader.Render("about") + "\n\n" + content)
+}
+
 func (m model) renderPinPanel() string {
 	var b strings.Builder
 	title := fmt.Sprintf("PINS (%d)  identity:%s  — j/k · d ack · u unpin · enter preview · P/esc close",
@@ -959,11 +1026,42 @@ func (m model) renderPinPanel() string {
 
 func (m model) renderPicker() string {
 	opts := m.pickOptions()
+
+	boxW := m.width - 6
+	if boxW < 40 {
+		boxW = 40
+	}
+	boxH := m.height - 4
+	if boxH < 10 {
+		boxH = 10
+	}
+	// border(2) + padding(2) + title(1) + blank(1) + scroll-hint-top(1) + scroll-hint-bot(1) = 8
+	contentH := boxH - 8
+	if contentH < 3 {
+		contentH = 3
+	}
+
+	// Derive scroll offset so the cursor stays visible.
+	scroll := 0
+	if m.pickIdx >= contentH {
+		scroll = m.pickIdx - contentH + 1
+	}
+	end := scroll + contentH
+	if end > len(opts) {
+		end = len(opts)
+	}
+
 	var b strings.Builder
 	title := fmt.Sprintf("pick %s  (j/k move, enter select, q cancel)", m.pickKind)
 	b.WriteString(styleHeader.Render(title) + "\n\n")
-	for i, o := range opts {
-		line := o
+
+	if scroll > 0 {
+		b.WriteString(styleDim.Render(fmt.Sprintf("↑ %d above", scroll)) + "\n")
+	} else {
+		b.WriteString(styleDim.Render(strings.Repeat("─", boxW-6)) + "\n")
+	}
+	for i := scroll; i < end; i++ {
+		line := opts[i]
 		if i == m.pickIdx {
 			line = styleCursor.Render("› " + line)
 		} else {
@@ -971,9 +1069,16 @@ func (m model) renderPicker() string {
 		}
 		b.WriteString(line + "\n")
 	}
+	if end < len(opts) {
+		b.WriteString(styleDim.Render(fmt.Sprintf("↓ %d below", len(opts)-end)) + "\n")
+	} else {
+		b.WriteString(styleDim.Render(strings.Repeat("─", boxW-6)) + "\n")
+	}
+
 	return lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		Padding(1, 2).
+		Width(boxW).
 		Background(lipgloss.Color("235")).
 		Render(b.String())
 }
@@ -1174,7 +1279,7 @@ func main() {
 	identity := defaultIdentity()
 	binPath := resolveCommSyncBin()
 
-	p := tea.NewProgram(initialModel(st, *poll, identity, binPath), tea.WithAltScreen())
+	p := tea.NewProgram(initialModel(st, *poll, identity, binPath, *dbPath), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		log.Fatalf("tui: %v", err)
 	}

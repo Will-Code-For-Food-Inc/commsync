@@ -101,11 +101,11 @@ func (s *store) listRooms(ctx context.Context) ([]string, error) {
 }
 
 type filterSpec struct {
-	room        string // "" = all rooms
-	topic       string // "" = all topics
-	agent       string // "" = all agents (matches from_agent or to_agent)
+	room         string // "" = all rooms
+	topic        string // "" = all topics
+	agent        string // "" = all agents (matches from_agent or to_agent)
 	includeAcked bool
-	limit       int
+	limit        int
 }
 
 func (s *store) listMessages(ctx context.Context, f filterSpec) ([]message, error) {
@@ -264,6 +264,21 @@ ORDER BY pm.pinned_at DESC`, identity, identity)
 	return out, rows.Err()
 }
 
+// ---------- row types for date-grouped list ----------
+
+type rowKind int
+
+const (
+	rowDateHeader rowKind = iota
+	rowMessage
+)
+
+type listRow struct {
+	kind   rowKind
+	date   string // YYYY-MM-DD key; set for both kinds
+	msgIdx int    // index into m.messages; valid only when kind==rowMessage
+}
+
 // ---------- bubbletea model ----------
 
 type tickMsg time.Time
@@ -289,6 +304,8 @@ type model struct {
 	topics         []string
 	agents         []string
 	cursor         int
+	rows           []listRow
+	collapsedDates map[string]bool
 	showPreview    bool
 	previewScroll  int
 	showHelp       bool
@@ -309,13 +326,53 @@ type model struct {
 
 func initialModel(st *store, pollEvery time.Duration, identity, binPath, dbPath string) model {
 	return model{
-		st:        st,
-		filter:    filterSpec{includeAcked: false, limit: 500},
-		pollEvery: pollEvery,
-		identity:  identity,
-		binPath:   binPath,
-		dbPath:    dbPath,
+		st:             st,
+		filter:         filterSpec{includeAcked: false, limit: 500},
+		pollEvery:      pollEvery,
+		identity:       identity,
+		binPath:        binPath,
+		dbPath:         dbPath,
+		collapsedDates: make(map[string]bool),
 	}
+}
+
+func (m *model) rebuildRows() {
+	m.rows = m.rows[:0]
+	lastKey := ""
+	for i, msg := range m.messages {
+		key := msg.CreatedAt.Local().Format("2006-01-02")
+		if key != lastKey {
+			m.rows = append(m.rows, listRow{kind: rowDateHeader, date: key})
+			lastKey = key
+		}
+		if !m.collapsedDates[key] {
+			m.rows = append(m.rows, listRow{kind: rowMessage, date: key, msgIdx: i})
+		}
+	}
+}
+
+func (m *model) clampCursor() {
+	if len(m.rows) == 0 {
+		m.cursor = 0
+		return
+	}
+	if m.cursor >= len(m.rows) {
+		m.cursor = len(m.rows) - 1
+	}
+	if m.cursor < 0 {
+		m.cursor = 0
+	}
+}
+
+func (m *model) currentMessage() (message, bool) {
+	if m.cursor < 0 || m.cursor >= len(m.rows) {
+		return message{}, false
+	}
+	r := m.rows[m.cursor]
+	if r.kind != rowMessage {
+		return message{}, false
+	}
+	return m.messages[r.msgIdx], true
 }
 
 func (m model) Init() tea.Cmd {
@@ -365,25 +422,26 @@ func (m model) Update(raw tea.Msg) (tea.Model, tea.Cmd) {
 		// If preview is open, track the pinned message by ID so new arrivals
 		// don't silently swap what's being displayed.
 		var pinnedID int64
-		if m.showPreview && m.cursor < len(m.messages) {
-			pinnedID = m.messages[m.cursor].ID
+		if m.showPreview {
+			if cur, ok := m.currentMessage(); ok {
+				pinnedID = cur.ID
+			}
 		}
 		m.messages = msg.msgs
 		m.pins = msg.pins
 		m.rooms = msg.rooms
 		m.topics = msg.topics
 		m.agents = msg.agents
+		m.rebuildRows()
 		if pinnedID != 0 {
-			for i, mm := range m.messages {
-				if mm.ID == pinnedID {
+			for i, row := range m.rows {
+				if row.kind == rowMessage && m.messages[row.msgIdx].ID == pinnedID {
 					m.cursor = i
 					break
 				}
 			}
 		}
-		if m.cursor >= len(m.messages) {
-			m.cursor = max(0, len(m.messages)-1)
-		}
+		m.clampCursor()
 		return m, nil
 	case pinResultMsg:
 		if msg.err != nil {
@@ -428,7 +486,7 @@ func (m model) onKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "v":
 		m.showAbout = true
 	case "j", "down":
-		if m.cursor < len(m.messages)-1 {
+		if m.cursor < len(m.rows)-1 {
 			m.cursor++
 		}
 	case "k", "up":
@@ -438,14 +496,36 @@ func (m model) onKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "g":
 		m.cursor = 0
 	case "G":
-		m.cursor = max(0, len(m.messages)-1)
+		m.cursor = max(0, len(m.rows)-1)
 	case "pgdown", "ctrl+f":
-		m.cursor = min(len(m.messages)-1, m.cursor+10)
+		m.cursor = min(len(m.rows)-1, m.cursor+10)
 	case "pgup", "ctrl+b":
 		m.cursor = max(0, m.cursor-10)
+	case "tab":
+		if m.cursor >= 0 && m.cursor < len(m.rows) {
+			key := m.rows[m.cursor].date
+			wasCollapsed := m.collapsedDates[key]
+			m.collapsedDates[key] = !wasCollapsed
+			m.rebuildRows()
+			// move cursor to the date header for this key
+			for i, r := range m.rows {
+				if r.date == key && r.kind == rowDateHeader {
+					m.cursor = i
+					break
+				}
+			}
+		}
 	case "enter", " ":
-		m.showPreview = true
-		m.previewScroll = 0
+		if _, ok := m.currentMessage(); ok {
+			m.showPreview = true
+			m.previewScroll = 0
+		} else if m.cursor < len(m.rows) {
+			// on a header — toggle collapse
+			key := m.rows[m.cursor].date
+			m.collapsedDates[key] = !m.collapsedDates[key]
+			m.rebuildRows()
+			m.clampCursor()
+		}
 	case "r":
 		m.showPick = true
 		m.pickKind = "room"
@@ -469,18 +549,17 @@ func (m model) onKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "R":
 		return m, m.reload()
 	case "p":
-		if len(m.messages) > 0 && m.cursor < len(m.messages) {
-			m.pinTargetMsgID = m.messages[m.cursor].ID
+		if cur, ok := m.currentMessage(); ok {
+			m.pinTargetMsgID = cur.ID
 			m.showPick = true
 			m.pickKind = "pinkind"
 			m.pickIdx = 0
 		}
 	case "u":
-		if len(m.messages) > 0 && m.cursor < len(m.messages) {
-			msg := m.messages[m.cursor]
-			if msg.PinID.Valid {
+		if cur, ok := m.currentMessage(); ok {
+			if cur.PinID.Valid {
 				return m, callCommsync(m.binPath, "unpin_message", map[string]interface{}{
-					"pin_id":      msg.PinID.Int64,
+					"pin_id":      cur.PinID.Int64,
 					"unpinned_by": m.identity,
 				})
 			}
@@ -527,8 +606,9 @@ func (m model) onPinPanelKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.pinCursor < len(m.pins) {
 			p := m.pins[m.pinCursor]
 			m.showPins = false
-			for i, msg := range m.messages {
-				if msg.ID == p.MsgID {
+			// Find the row index for this message and set cursor to it
+			for i, row := range m.rows {
+				if row.kind == rowMessage && m.messages[row.msgIdx].ID == p.MsgID {
 					m.cursor = i
 					break
 				}
@@ -668,6 +748,19 @@ func statusStyle(s string) lipgloss.Style {
 	}
 }
 
+func dateLabel(key string) string {
+	today := time.Now().Local().Format("2006-01-02")
+	yesterday := time.Now().Local().AddDate(0, 0, -1).Format("2006-01-02")
+	switch key {
+	case today:
+		return "Today"
+	case yesterday:
+		return "Yesterday"
+	default:
+		return key
+	}
+}
+
 func (m model) View() string {
 	if m.width == 0 {
 		return "loading..."
@@ -740,7 +833,7 @@ func (m model) renderHeader() string {
 }
 
 func (m model) renderFooter() string {
-	hint := "q quit | ? help | v about | j/k move | enter preview | r room | t topic | a agent | A acked | x clear | R reload | p pin | u unpin | P pins"
+	hint := "q quit | ? help | v about | j/k move | tab/enter collapse | enter preview | r room | t topic | a agent | A acked | x clear | R reload | p pin | u unpin | P pins"
 	return styleBar.Width(m.width).Render(styleHelp.Render(hint))
 }
 
@@ -778,49 +871,67 @@ func (m model) renderList(h int) string {
 		start = m.cursor - rowsAvail + 1
 	}
 	end := start + rowsAvail
-	if end > len(m.messages) {
-		end = len(m.messages)
+	if end > len(m.rows) {
+		end = len(m.rows)
 	}
 
 	for i := start; i < end; i++ {
-		msg := m.messages[i]
-		ts := msg.CreatedAt.Local().Format("2006-01-02 15:04")
-		room := truncate(msg.Room, roomW)
-		from := truncate(msg.From, fromW)
-		to := truncate(msg.To, toW)
-		topic := truncate(msg.Topic, topicW)
-		status := truncate(msg.Status, statusW)
-		preview := truncate(oneLine(msg.Body), bodyW)
-
-		badge := "  "
-		if msg.PinID.Valid {
-			if msg.PinKind.String == "snippet" {
-				badge = "* "
-			} else {
-				badge = "! "
+		row := m.rows[i]
+		if row.kind == rowDateHeader {
+			arrow := "▾"
+			if m.collapsedDates[row.date] {
+				arrow = "▸"
 			}
-		}
+			label := fmt.Sprintf("%s %s", arrow, dateLabel(row.date))
+			dashW := m.width - len([]rune(label)) - 8
+			if dashW < 0 {
+				dashW = 0
+			}
+			line := styleDim.Render(strings.Repeat("─", 4)) + " " + styleHeader.Render(label) + " " + styleDim.Render(strings.Repeat("─", dashW))
+			if i == m.cursor {
+				line = styleCursor.Render(line)
+			}
+			lines = append(lines, line)
+		} else {
+			msg := m.messages[row.msgIdx]
+			ts := msg.CreatedAt.Local().Format("2006-01-02 15:04")
+			room := truncate(msg.Room, roomW)
+			from := truncate(msg.From, fromW)
+			to := truncate(msg.To, toW)
+			topic := truncate(msg.Topic, topicW)
+			status := truncate(msg.Status, statusW)
+			preview := truncate(oneLine(msg.Body), bodyW)
 
-		statusStr := statusStyle(msg.Status).Render(fmt.Sprintf("%-*s", statusW, status))
-		row := fmt.Sprintf("%s%-*s  %-*s %-*s %-*s %-*s %s %s",
-			badge, tsW, ts, roomW, room, fromW, from, toW, to, topicW, topic, statusStr, preview)
+			badge := "  "
+			if msg.PinID.Valid {
+				if msg.PinKind.String == "snippet" {
+					badge = "* "
+				} else {
+					badge = "! "
+				}
+			}
 
-		if msg.Acked {
-			row = styleAck.Render(row)
+			statusStr := statusStyle(msg.Status).Render(fmt.Sprintf("%-*s", statusW, status))
+			msgRow := fmt.Sprintf("%s%-*s  %-*s %-*s %-*s %-*s %s %s",
+				badge, tsW, ts, roomW, room, fromW, from, toW, to, topicW, topic, statusStr, preview)
+
+			if msg.Acked {
+				msgRow = styleAck.Render(msgRow)
+			}
+			if i == m.cursor {
+				msgRow = styleCursor.Render(msgRow)
+			}
+			lines = append(lines, msgRow)
 		}
-		if i == m.cursor {
-			row = styleCursor.Render(row)
-		}
-		lines = append(lines, row)
 	}
 	return strings.Join(lines, "\n")
 }
 
 func (m model) renderPreview() string {
-	if len(m.messages) == 0 || m.cursor >= len(m.messages) {
+	msg, ok := m.currentMessage()
+	if !ok {
 		return ""
 	}
-	msg := m.messages[m.cursor]
 
 	boxW := m.width - 6
 	if boxW < 40 {
@@ -901,7 +1012,8 @@ func (m model) renderHelp() string {
   g            jump to newest
   G            jump to oldest
   pgdn/pgup    page
-  enter/space  open scrollable preview overlay
+  tab          toggle collapse for current date group
+  enter/space  open preview (on message) or toggle collapse (on date header)
   r            pick room filter
   t            pick topic filter
   a            pick agent filter (matches from OR to)

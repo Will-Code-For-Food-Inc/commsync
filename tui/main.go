@@ -848,7 +848,7 @@ func (m model) renderList(h int) string {
 	// messages slice is already newest-first. Render newest at top.
 	// Column widths (fit to width).
 	const badgeW = 2 // pin badge: "* " or "! " or "  "
-	tsW := 16        // "2006-01-02 15:04"
+	tsW := 5         // "15:04"
 	roomW := 10
 	fromW := 12
 	toW := 10
@@ -862,7 +862,7 @@ func (m model) renderList(h int) string {
 
 	lines := []string{}
 	colHeader := fmt.Sprintf("  %-*s  %-*s %-*s %-*s %-*s %-*s %s",
-		tsW, "DATETIME", roomW, "ROOM", fromW, "FROM", toW, "→ TO", topicW, "TOPIC", statusW, "STATUS", "BODY")
+		tsW, "TIME", roomW, "ROOM", fromW, "FROM", toW, "→ TO", topicW, "TOPIC", statusW, "STATUS", "BODY")
 	lines = append(lines, styleDim.Render(colHeader))
 
 	// determine visible window around cursor
@@ -898,7 +898,7 @@ func (m model) renderList(h int) string {
 			lines = append(lines, line)
 		} else {
 			msg := m.messages[row.msgIdx]
-			ts := msg.CreatedAt.Local().Format("2006-01-02 15:04")
+			ts := msg.CreatedAt.Local().Format("15:04")
 			room := truncate(msg.Room, roomW)
 			from := truncate(msg.From, fromW)
 			to := truncate(msg.To, toW)

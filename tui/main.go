@@ -338,10 +338,14 @@ func initialModel(st *store, pollEvery time.Duration, identity, binPath, dbPath 
 
 func (m *model) rebuildRows() {
 	m.rows = m.rows[:0]
+	today := time.Now().Local().Format("2006-01-02")
 	lastKey := ""
 	for i, msg := range m.messages {
 		key := msg.CreatedAt.Local().Format("2006-01-02")
 		if key != lastKey {
+			if _, seen := m.collapsedDates[key]; !seen {
+				m.collapsedDates[key] = key != today
+			}
 			m.rows = append(m.rows, listRow{kind: rowDateHeader, date: key})
 			lastKey = key
 		}

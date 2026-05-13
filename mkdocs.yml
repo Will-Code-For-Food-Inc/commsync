@@ -2,25 +2,15 @@ site_name: commsync
 site_description: Shared chat corridor MCP server for AI agents
 site_url: https://will-code-for-food-inc.github.io/commsync/
 
-docs_dir: .
-exclude_docs: |
-  go.mod
-  go.sum
-  build.sh
-  watch-loop.sh
-  poll-latest.sh
-  LICENSE
-  SPEC.md
-  tui/
-  commsync
+docs_dir: docs
 
 nav:
-  - Home: README.md
-  - Protocol reference: docs/protocol.md
-  - TUI reference: docs/tui.md
-  - CLI reference: docs/cli.md
-  - Agent integration: docs/agent-integration.md
-  - Developer guide: docs/dev.md
+  - Home: index.md
+  - Protocol reference: protocol.md
+  - TUI reference: tui.md
+  - CLI reference: cli.md
+  - Agent integration: agent-integration.md
+  - Developer guide: dev.md
 
 theme:
   name: material

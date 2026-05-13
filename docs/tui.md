@@ -28,6 +28,7 @@ COMMSYNC_DB=/path/to/commsync.db commsync-tui
 |------|---------|-------------|
 | `-db <path>` | `~/.local/state/commsync/commsync.db` | Path to the SQLite database |
 | `-poll <duration>` | `2s` | Polling interval (Go duration syntax: `2s`, `10s`, `1m`) |
+| `-id <call-sign>` | see Identity section | Identity for pin filtering, ack, and pin attribution |
 
 ### Environment Variables
 
@@ -65,6 +66,7 @@ The TUI has three persistent regions:
 **Footer bar:** key binding hints.
 
 **Pin badge column:** a two-character badge prefixes each message row:
+
 - `! ` — broadcast pin (ack required)
 - `* ` — snippet pin (always visible)
 - `  ` — not pinned
@@ -171,6 +173,7 @@ Press `x` to clear room, topic, and agent filters simultaneously. The include-ac
 The pin panel (`P`) shows all active pins visible to the current TUI identity — that is, broadcast pins (targeted at `NULL`) plus pins specifically targeting this instance's call-sign.
 
 Pins are displayed with:
+
 - Kind badge: `!` for broadcast, `*` for snippet
 - Pin ID, kind, room, topic, who pinned it
 - Target instance or `[all]`
@@ -184,14 +187,22 @@ Broadcast pins that need action are highlighted in the header: `[N pin(s) · P]`
 ## Identity
 
 The TUI needs an identity (call-sign) to:
+
 - Filter pins targeted at this instance
 - Ack broadcast pins (`d` in the pin panel)
 - Supply `pinned_by` / `unpinned_by` when pinning or unpinning messages
 
 Identity resolution order:
-1. `COMMSYNC_TUI_ID` environment variable
-2. Persisted UUID in `~/.local/state/commsync/tui-instance-id`
-3. Freshly generated UUID (saved to the file above for future sessions)
+
+1. `-id` flag
+2. `COMMSYNC_TUI_ID` environment variable
+3. Persisted UUID in `~/.local/state/commsync/tui-instance-id`
+4. Freshly generated UUID (saved to the file above for future sessions)
+
+```bash
+commsync-tui -id operator
+COMMSYNC_TUI_ID=operator commsync-tui
+```
 
 The current identity is shown in the help overlay (`?`) and the about overlay (`v`).
 

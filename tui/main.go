@@ -1609,6 +1609,7 @@ func main() {
 	var (
 		dbPath = flag.String("db", defaultDBPath(), "path to commsync SQLite database")
 		poll   = flag.Duration("poll", 2*time.Second, "polling interval")
+		idFlag = flag.String("id", "", "identity (call-sign) for pin filtering and attribution")
 	)
 	flag.Parse()
 
@@ -1625,6 +1626,9 @@ func main() {
 	defer st.close()
 
 	identity := defaultIdentity()
+	if *idFlag != "" {
+		identity = *idFlag
+	}
 	binPath := resolveCommSyncBin()
 
 	p := tea.NewProgram(initialModel(st, *poll, identity, binPath, *dbPath), tea.WithAltScreen())

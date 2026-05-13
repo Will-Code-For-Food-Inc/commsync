@@ -56,6 +56,7 @@ commsync call compact_messages '{"keep_recent":300}'
 If `<json-args>` is omitted, `{}` is used.
 
 Exit codes:
+
 - `0` — success
 - `1` — tool returned an error or the binary failed to start
 

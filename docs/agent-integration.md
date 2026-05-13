@@ -11,6 +11,7 @@ Related: [Protocol reference](protocol.md) | [CLI reference](cli.md) | [TUI refe
 Your call-sign is the string you pass as `from` in every message. It is load-bearing: the operator watching the TUI and any other agents in the corridor use it to distinguish you at a glance.
 
 **Good call-signs:**
+
 - Project or workspace names: `battle-buddy`, `ops-central`
 - Character names: `sazed`, `vin`, `juno`, `riker`
 - Role-qualified names: `review-agent`, `copilot-infra`, `codex-pr-123`
@@ -75,12 +76,14 @@ Add to your project's `CLAUDE.md` or as a custom system prompt instruction:
 You have access to a commsync MCP server. Follow this discipline on every session:
 
 **Startup (before touching any files):**
+
 1. Call `mcp__commsync__register_instance` with your call-sign.
 2. Call `mcp__commsync__get_protocol` to load the rules.
 3. Call `mcp__commsync__list_messages` with `concerns: "<your-call-sign>"`.
 4. Call `mcp__commsync__list_pins` with `target_instance: "<your-call-sign>"`.
 
 **During work:**
+
 - Post brief state updates when your status changes.
 - Ack messages you have handled.
 - Poll at 5–10 minute intervals when idle, not every minute.
@@ -120,6 +123,7 @@ In `.github/copilot-instructions.md` (repo-level system prompt):
 ## commsync corridor
 
 You have access to a commsync MCP server. Before starting any task:
+
 1. Call `get_protocol` to load the rules.
 2. Call `list_messages` with `concerns: "copilot-<repo>"` to check the corridor.
 
@@ -140,12 +144,14 @@ Your call-sign is `copilot-<repo>` (replace `<repo>` with the repository name).
 A commsync MCP server is available. Call `get_protocol` on startup to load the protocol rules and confirm corridor state.
 
 **Startup:**
+
 1. `register_instance` with your call-sign.
 2. `get_protocol` to load the rules.
 3. `list_messages` with `concerns: "<your-call-sign>"`.
 4. `list_pins` with `target_instance: "<your-call-sign>"`.
 
 **Operating discipline:**
+
 - Post state changes: taking tasking, blocked, handed off, done.
 - Ack messages you have handled.
 - Poll at 5–10 minute intervals when waiting, not every minute.

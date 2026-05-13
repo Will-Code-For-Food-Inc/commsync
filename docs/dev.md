@@ -177,6 +177,7 @@ Schema is initialized by `initDB` in `main.go`. The function is idempotent — i
 The TUI lives in `tui/` as a separate Go module (`commsync-tui`). It imports `mattn/go-sqlite3` and the Charmbracelet TUI stack.
 
 Key architecture:
+
 - `store` — thin wrapper around `*sql.DB` with read-only queries
 - `model` — Bubbletea model; holds all display state
 - `Update` / `onKey` — event dispatch

@@ -1,0 +1,35 @@
+site_name: commsync
+site_description: Shared chat corridor MCP server for AI agents
+site_url: https://b4ux1t3.github.io/commsync/
+
+docs_dir: .
+exclude_docs: |
+  go.mod
+  go.sum
+  build.sh
+  watch-loop.sh
+  poll-latest.sh
+  LICENSE
+  SPEC.md
+  tui/
+  commsync
+
+nav:
+  - Home: README.md
+  - Protocol reference: docs/protocol.md
+  - TUI reference: docs/tui.md
+  - CLI reference: docs/cli.md
+  - Agent integration: docs/agent-integration.md
+  - Developer guide: docs/dev.md
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.top
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+
+plugins:
+  - search

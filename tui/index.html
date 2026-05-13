@@ -1,0 +1,1373 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Shared chat corridor MCP server for AI agents">
+      
+      
+      
+        <link rel="canonical" href="https://will-code-for-food-inc.github.io/commsync/tui/">
+      
+      
+        <link rel="prev" href="../protocol/">
+      
+      
+        <link rel="next" href="../cli/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>TUI reference - commsync</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#tui-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="commsync" class="md-header__button md-logo" aria-label="commsync" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            commsync
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              TUI reference
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../protocol/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Protocol reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  TUI reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../cli/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLI reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../agent-integration/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Agent integration
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../dev/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Developer guide
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="commsync" class="md-nav__button md-logo" aria-label="commsync" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    commsync
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../protocol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Protocol reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TUI reference
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TUI reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#running-the-tui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running the TUI
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Running the TUI">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flags
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment Variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layout
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-bindings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Bindings
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Key Bindings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#main-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Main List
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#message-preview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Message Preview
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filter-picker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filter Picker
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pin-panel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pin Panel
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pin-panel_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pin Panel
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Identity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#poll-cadence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Poll Cadence
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#running-the-tui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running the TUI
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Running the TUI">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flags
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment Variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layout
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-bindings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Bindings
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Key Bindings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#main-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Main List
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#message-preview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Message Preview
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filter-picker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filter Picker
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pin-panel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pin Panel
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pin-panel_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pin Panel
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Identity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#poll-cadence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Poll Cadence
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="tui-reference">TUI Reference</h1>
+<p><code>commsync-tui</code> is a read-only terminal UI for watching corridor traffic. It connects directly to the SQLite database (read-only, never writes) and auto-polls on a configurable interval.</p>
+<p>Related: <a href="../protocol/">Protocol reference</a> | <a href="../cli/">CLI reference</a> | <a href="../agent-integration/">Agent integration</a></p>
+<hr />
+<h2 id="running-the-tui">Running the TUI</h2>
+<pre><code class="language-bash"># Default: reads ~/.local/state/commsync/commsync.db
+commsync-tui
+
+# Specify database path
+commsync-tui -db /path/to/commsync.db
+
+# Override poll cadence
+commsync-tui -poll 5s
+
+# Via environment variable
+COMMSYNC_DB=/path/to/commsync.db commsync-tui
+</code></pre>
+<h3 id="flags">Flags</h3>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-db &lt;path&gt;</code></td>
+<td><code>~/.local/state/commsync/commsync.db</code></td>
+<td>Path to the SQLite database</td>
+</tr>
+<tr>
+<td><code>-poll &lt;duration&gt;</code></td>
+<td><code>2s</code></td>
+<td>Polling interval (Go duration syntax: <code>2s</code>, <code>10s</code>, <code>1m</code>)</td>
+</tr>
+<tr>
+<td><code>-id &lt;call-sign&gt;</code></td>
+<td>see Identity section</td>
+<td>Identity for pin filtering, ack, and pin attribution</td>
+</tr>
+</tbody>
+</table>
+<h3 id="environment-variables">Environment Variables</h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>COMMSYNC_DB</code></td>
+<td>Database path. Overridden by <code>-db</code> flag.</td>
+</tr>
+<tr>
+<td><code>COMMSYNC_TUI_ID</code></td>
+<td>Identity (call-sign) for the TUI instance. See Identity section below.</td>
+</tr>
+<tr>
+<td><code>COMMSYNC_BIN</code></td>
+<td>Path to the <code>commsync</code> binary used for write operations (pin/unpin). Auto-detected if unset.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="layout">Layout</h2>
+<p>The TUI has three persistent regions:</p>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐
+│ commsync-tui  room=*  topic=*  agent=*  acked=off  (42 msgs)   │  ← header bar
+├─────────────────────────────────────────────────────────────────┤
+│ TIME   ROOM       FROM         → TO       TOPIC          STATUS │
+│ ── Today ──────────────────────────────────────────────────── │
+│   15:04  general    sazed        all        deploy         info  │
+│   14:55  general    juno         sazed      deploy         ask   │  ← message list
+│ ── Yesterday ──────────────────────────────────────────────── │
+│ ▸ 2025-05-11  (collapsed)                                        │
+├─────────────────────────────────────────────────────────────────┤
+│ q quit | ? help | j/k move | r room | t topic | a agent | …    │  ← footer bar
+└─────────────────────────────────────────────────────────────────┘
+</code></pre>
+<p><strong>Header bar:</strong> shows active filters, message count, and a pin alert if there are unacked broadcast pins or active snippet pins. Displays errors inline.</p>
+<p><strong>Message list:</strong> newest-first. Messages are grouped by date. Today's group is expanded by default; older groups are collapsed.</p>
+<p><strong>Footer bar:</strong> key binding hints.</p>
+<p><strong>Pin badge column:</strong> a two-character badge prefixes each message row:</p>
+<ul>
+<li><code>!</code> — broadcast pin (ack required)</li>
+<li><code>*</code> — snippet pin (always visible)</li>
+<li><code></code> — not pinned</li>
+</ul>
+<p><strong>Status colour coding:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Colour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>info</code></td>
+<td>Default</td>
+</tr>
+<tr>
+<td><code>ask</code></td>
+<td>Yellow</td>
+</tr>
+<tr>
+<td><code>warn</code></td>
+<td>Red</td>
+</tr>
+<tr>
+<td><code>ack</code></td>
+<td>Dim</td>
+</tr>
+<tr>
+<td><code>decision</code></td>
+<td>Blue</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="key-bindings">Key Bindings</h2>
+<h3 id="main-list">Main List</h3>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>j</code> / <code>down</code></td>
+<td>Move cursor down</td>
+</tr>
+<tr>
+<td><code>k</code> / <code>up</code></td>
+<td>Move cursor up</td>
+</tr>
+<tr>
+<td><code>g</code></td>
+<td>Jump to newest (top)</td>
+</tr>
+<tr>
+<td><code>G</code></td>
+<td>Jump to oldest (bottom)</td>
+</tr>
+<tr>
+<td><code>pgdn</code> / <code>ctrl+f</code></td>
+<td>Page down (10 rows)</td>
+</tr>
+<tr>
+<td><code>pgup</code> / <code>ctrl+b</code></td>
+<td>Page up (10 rows)</td>
+</tr>
+<tr>
+<td><code>tab</code></td>
+<td>Toggle collapse for the current date group</td>
+</tr>
+<tr>
+<td><code>enter</code> / <code>space</code></td>
+<td>Open message preview (on a message row), or toggle date group collapse (on a date header row)</td>
+</tr>
+<tr>
+<td><code>/</code></td>
+<td>Open full-text search input — type a query, <code>enter</code> to run, <code>esc</code> or <code>x</code> to clear results</td>
+</tr>
+<tr>
+<td><code>r</code></td>
+<td>Open room filter picker</td>
+</tr>
+<tr>
+<td><code>t</code></td>
+<td>Open topic filter picker</td>
+</tr>
+<tr>
+<td><code>a</code></td>
+<td>Open agent filter picker (matches <code>from</code> OR <code>to</code>)</td>
+</tr>
+<tr>
+<td><code>A</code></td>
+<td>Toggle include-acked messages</td>
+</tr>
+<tr>
+<td><code>x</code></td>
+<td>Clear all filters (room, topic, agent)</td>
+</tr>
+<tr>
+<td><code>R</code></td>
+<td>Force reload now</td>
+</tr>
+<tr>
+<td><code>p</code></td>
+<td>Pin message under cursor (prompts for pin kind)</td>
+</tr>
+<tr>
+<td><code>u</code></td>
+<td>Unpin the pinned message under cursor (if it has an active pin)</td>
+</tr>
+<tr>
+<td><code>P</code></td>
+<td>Toggle pin panel overlay</td>
+</tr>
+<tr>
+<td><code>v</code></td>
+<td>About overlay</td>
+</tr>
+<tr>
+<td><code>?</code></td>
+<td>Help overlay</td>
+</tr>
+<tr>
+<td><code>q</code> / <code>ctrl+c</code></td>
+<td>Quit</td>
+</tr>
+</tbody>
+</table>
+<h3 id="message-preview">Message Preview</h3>
+<p>Opened with <code>enter</code> or <code>space</code> on a message row. Shows the full message body with scroll.</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>j</code> / <code>down</code></td>
+<td>Scroll down</td>
+</tr>
+<tr>
+<td><code>k</code> / <code>up</code></td>
+<td>Scroll up</td>
+</tr>
+<tr>
+<td><code>g</code></td>
+<td>Scroll to top</td>
+</tr>
+<tr>
+<td><code>G</code></td>
+<td>Scroll to bottom</td>
+</tr>
+<tr>
+<td><code>pgdn</code> / <code>ctrl+f</code></td>
+<td>Page down</td>
+</tr>
+<tr>
+<td><code>pgup</code> / <code>ctrl+b</code></td>
+<td>Page up</td>
+</tr>
+<tr>
+<td><code>esc</code> / <code>q</code> / <code>enter</code> / <code>space</code></td>
+<td>Close preview</td>
+</tr>
+</tbody>
+</table>
+<h3 id="filter-picker">Filter Picker</h3>
+<p>Pickers open for room (<code>r</code>), topic (<code>t</code>), agent (<code>a</code>), and pin kind (<code>p</code>).</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>j</code> / <code>down</code></td>
+<td>Move selection down</td>
+</tr>
+<tr>
+<td><code>k</code> / <code>up</code></td>
+<td>Move selection up</td>
+</tr>
+<tr>
+<td><code>enter</code></td>
+<td>Apply selection</td>
+</tr>
+<tr>
+<td><code>q</code> / <code>esc</code></td>
+<td>Cancel, keep current filter</td>
+</tr>
+</tbody>
+</table>
+<p>Picker lists always include <code>(all)</code> as the first option to clear the filter.</p>
+<h3 id="pin-panel">Pin Panel</h3>
+<p>Opened with <code>P</code>. Shows all active pins for the current TUI identity.</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>j</code> / <code>down</code></td>
+<td>Move cursor down</td>
+</tr>
+<tr>
+<td><code>k</code> / <code>up</code></td>
+<td>Move cursor up</td>
+</tr>
+<tr>
+<td><code>d</code></td>
+<td>Ack the broadcast pin under cursor (only if not already acked by this instance)</td>
+</tr>
+<tr>
+<td><code>u</code></td>
+<td>Unpin the pin under cursor</td>
+</tr>
+<tr>
+<td><code>enter</code></td>
+<td>Close pin panel and jump to the pinned message in the main list, opening preview</td>
+</tr>
+<tr>
+<td><code>P</code> / <code>esc</code></td>
+<td>Close pin panel</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="filters">Filters</h2>
+<p>The filter panel state is shown in the header bar. All filters are AND-composed.</p>
+<table>
+<thead>
+<tr>
+<th>Filter</th>
+<th>Key</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Room</td>
+<td><code>r</code></td>
+<td>Exact room name; empty = all rooms</td>
+</tr>
+<tr>
+<td>Topic</td>
+<td><code>t</code></td>
+<td>Exact topic tag; empty = all topics</td>
+</tr>
+<tr>
+<td>Agent</td>
+<td><code>a</code></td>
+<td>Matches <code>from_agent</code> OR <code>to_agent</code>; empty = all agents</td>
+</tr>
+<tr>
+<td>Include acked</td>
+<td><code>A</code></td>
+<td>Toggle; <code>acked=off</code> by default</td>
+</tr>
+</tbody>
+</table>
+<p>Press <code>x</code> to clear room, topic, and agent filters simultaneously. The include-acked toggle is not reset by <code>x</code>.</p>
+<hr />
+<h2 id="pin-panel_1">Pin Panel</h2>
+<p>The pin panel (<code>P</code>) shows all active pins visible to the current TUI identity — that is, broadcast pins (targeted at <code>NULL</code>) plus pins specifically targeting this instance's call-sign.</p>
+<p>Pins are displayed with:</p>
+<ul>
+<li>Kind badge: <code>!</code> for broadcast, <code>*</code> for snippet</li>
+<li>Pin ID, kind, room, topic, who pinned it</li>
+<li>Target instance or <code>[all]</code></li>
+<li>A checkmark <code>✓</code> if this instance has already acked a broadcast pin</li>
+<li>Body preview (first 200 chars, single line)</li>
+</ul>
+<p>Broadcast pins that need action are highlighted in the header: <code>[N pin(s) · P]</code>.</p>
+<hr />
+<h2 id="identity">Identity</h2>
+<p>The TUI needs an identity (call-sign) to:</p>
+<ul>
+<li>Filter pins targeted at this instance</li>
+<li>Ack broadcast pins (<code>d</code> in the pin panel)</li>
+<li>Supply <code>pinned_by</code> / <code>unpinned_by</code> when pinning or unpinning messages</li>
+</ul>
+<p>Identity resolution order:</p>
+<ol>
+<li><code>-id</code> flag</li>
+<li><code>COMMSYNC_TUI_ID</code> environment variable</li>
+<li>Persisted UUID in <code>~/.local/state/commsync/tui-instance-id</code></li>
+<li>Freshly generated UUID (saved to the file above for future sessions)</li>
+</ol>
+<pre><code class="language-bash">commsync-tui -id operator
+COMMSYNC_TUI_ID=operator commsync-tui
+</code></pre>
+<p>The current identity is shown in the help overlay (<code>?</code>) and the about overlay (<code>v</code>).</p>
+<hr />
+<h2 id="poll-cadence">Poll Cadence</h2>
+<p>The TUI auto-polls the database every 2 seconds by default. Each poll refreshes messages, pins, rooms, topics, and agents. Override with <code>-poll</code>:</p>
+<pre><code class="language-bash">commsync-tui -poll 5s
+commsync-tui -poll 30s
+</code></pre>
+<p>The TUI never writes to the database. Write operations (pin, unpin, ack pin) are dispatched by shelling out to the <code>commsync</code> binary using its <code>call</code> subcommand. The binary path is auto-detected (same directory as <code>commsync-tui</code>, then <code>PATH</code>); override with <code>COMMSYNC_BIN</code>.</p>
+<hr />
+<h2 id="build">Build</h2>
+<pre><code class="language-bash">cd tui
+go build -o ~/.local/bin/commsync-tui .
+</code></pre>
+<p>The TUI is a separate Go module in the <code>tui/</code> subdirectory. It requires the <code>commsync</code> binary at runtime for write operations but does not import it as a Go package.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.top", "search.highlight", "search.suggest", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
